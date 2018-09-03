@@ -1,0 +1,17 @@
+{
+  "name": "Metric Chrome Extension",
+  "version": "0.1",
+  "description": "Automatically convert all imperial measurements to metric!",
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "css": ["content.css"],
+      "js": ["quantities.js", "content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "permissions": [
+    "activeTab"
+  ],
+  "manifest_version": 2
+}
