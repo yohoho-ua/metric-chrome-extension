@@ -24,7 +24,7 @@ SOFTWARE.
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
-  (global.Qty = factory());
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Qty = factory());
 }(this, (function () { 'use strict';
 
   /**
@@ -105,8 +105,9 @@ SOFTWARE.
    * Safely multiplies numbers while avoiding floating errors
    * like 0.1 * 0.1 => 0.010000000000000002
    *
+   * @param {...number} numbers - numbers to multiply
+   *
    * @returns {number} result
-   * @param {...number} number
    */
   function mulSafe() {
     var result = 1, decimals = 0;
@@ -260,7 +261,7 @@ SOFTWARE.
     "<dalton>" : [["Da","Dalton","Daltons","dalton","daltons"], 1.660538921e-27, "mass", ["<kilogram>"]],
     "<slug>" : [["slug","slugs"], 14.5939029, "mass", ["<kilogram>"]],
     "<short-ton>" : [["tn","ton","short-ton"], 907.18474, "mass", ["<kilogram>"]],
-    "<metric-ton>":[["tonne","metric-ton"], 1000, "mass", ["<kilogram>"]],
+    "<metric-ton>":[["t","tonne","metric-ton"], 1000, "mass", ["<kilogram>"]],
     "<carat>" : [["ct","carat","carats"], 0.0002, "mass", ["<kilogram>"]],
     "<pound>" : [["lbs","lb","pound","pounds","#"], 0.45359237, "mass", ["<kilogram>"]],
     "<ounce>" : [["oz","ounce","ounces"], 0.0283495231, "mass", ["<kilogram>"]],
@@ -277,13 +278,19 @@ SOFTWARE.
     /* volume */
     "<liter>" : [["l","L","liter","liters","litre","litres"], 0.001, "volume", ["<meter>","<meter>","<meter>"]],
     "<gallon>":  [["gal","gallon","gallons"], 0.0037854118, "volume", ["<meter>","<meter>","<meter>"]],
+    "<gallon-imp>":  [["galimp","gallon-imp","gallons-imp"], 0.0045460900, "volume", ["<meter>","<meter>","<meter>"]],
     "<quart>":  [["qt","quart","quarts"], 0.00094635295, "volume", ["<meter>","<meter>","<meter>"]],
     "<pint>":  [["pt","pint","pints"], 0.000473176475, "volume", ["<meter>","<meter>","<meter>"]],
+    "<pint-imp>":  [["ptimp","pint-imp","pints-imp"], 5.6826125e-4, "volume", ["<meter>","<meter>","<meter>"]],
     "<cup>":  [["cu","cup","cups"], 0.000236588238, "volume", ["<meter>","<meter>","<meter>"]],
     "<fluid-ounce>":  [["floz","fluid-ounce","fluid-ounces"], 2.95735297e-5, "volume", ["<meter>","<meter>","<meter>"]],
+    "<fluid-ounce-imp>":  [["flozimp", "floz-imp","fluid-ounce-imp","fluid-ounces-imp"], 2.84130625e-5, "volume", ["<meter>","<meter>","<meter>"]],
     "<tablespoon>":  [["tb","tbsp","tbs","tablespoon","tablespoons"], 1.47867648e-5, "volume", ["<meter>","<meter>","<meter>"]],
     "<teaspoon>":  [["tsp","teaspoon","teaspoons"], 4.92892161e-6, "volume", ["<meter>","<meter>","<meter>"]],
     "<bushel>":  [["bu","bsh","bushel","bushels"], 0.035239072, "volume", ["<meter>","<meter>","<meter>"]],
+    "<oilbarrel>":  [["bbl","oilbarrel", "oilbarrels", "oil-barrel","oil-barrels"], 0.158987294928, "volume", ["<meter>","<meter>","<meter>"]],
+    "<beerbarrel>":  [["bl","bl-us","beerbarrel", "beerbarrels", "beer-barrel","beer-barrels"], 0.1173477658, "volume", ["<meter>","<meter>","<meter>"]],
+    "<beerbarrel-imp>":  [["blimp","bl-imp","beerbarrel-imp", "beerbarrels-imp", "beer-barrel-imp","beer-barrels-imp"], 0.16365924, "volume", ["<meter>","<meter>","<meter>"]],
 
     /* speed */
     "<kph>" : [["kph"], 0.277777778, "speed", ["<meter>"], ["<second>"]],
@@ -293,6 +300,7 @@ SOFTWARE.
 
     /* acceleration */
     "<gee>" : [["gee"], 9.80665, "acceleration", ["<meter>"], ["<second>","<second>"]],
+    "<Gal>" : [["Gal"], 1e-2, "acceleration", ["<meter>"], ["<second>","<second>"]],
 
     /* temperature_difference */
     "<kelvin>" : [["degK","kelvin"], 1.0, "temperature", ["<kelvin>"]],
@@ -333,9 +341,9 @@ SOFTWARE.
     /* substance */
     "<mole>"  :  [["mol","mole"], 1.0, "substance", ["<mole>"]],
 
-    /* concentration */
-    "<molar>" : [["M","molar"], 1000, "concentration", ["<mole>"], ["<meter>","<meter>","<meter>"]],
-    "<wtpercent>"  : [["wt%","wtpercent"], 10, "concentration", ["<kilogram>"], ["<meter>","<meter>","<meter>"]],
+    /* molar_concentration */
+    "<molar>" : [["M","molar"], 1000, "molar_concentration", ["<mole>"], ["<meter>","<meter>","<meter>"]],
+    "<wtpercent>"  : [["wt%","wtpercent"], 10, "molar_concentration", ["<kilogram>"], ["<meter>","<meter>","<meter>"]],
 
     /* activity */
     "<katal>" :  [["kat","katal","Katal"], 1.0, "activity", ["<mole>"], ["<second>"]],
@@ -470,6 +478,7 @@ SOFTWARE.
    * @param {string} unitDef - Name of unit to test
    * @param {Object} definition - Definition of unit to test
    *
+   * @returns {void}
    * @throws {QtyError} if unit definition is not valid
    */
   function validateUnitDefinition(unitDef, definition) {
@@ -528,11 +537,11 @@ SOFTWARE.
   /**
    * Returns a list of available units of kind
    *
-   * @param {string} [kind]
+   * @param {string} [kind] - kind of units
    * @returns {array} names of units
    * @throws {QtyError} if kind is unknown
    */
-  function getUnits (kind) {
+  function getUnits(kind) {
     var i;
     var units = [];
     var unitKeys = Object.keys(UNITS);
@@ -568,7 +577,7 @@ SOFTWARE.
   /**
    * Returns a list of alternative names for a unit
    *
-   * @param {string} unitName
+   * @param {string} unitName - name of unit
    * @returns {string[]} aliases for unit
    * @throws {QtyError} if unit is unknown
    */
@@ -898,6 +907,7 @@ SOFTWARE.
    * @param {*} value - Value to test
    * @param {string} [units] - Optional units when value is passed as a number
    *
+   * @returns {void}
    * @throws {QtyError} if constructor arguments are invalid
    */
   function assertValidConstructorArgs(value, units) {
@@ -1284,8 +1294,10 @@ SOFTWARE.
         throw new QtyError("Divide by zero");
       }
 
-      var precRoundedResult = mulSafe(Math.round(this.scalar / precQuantity.scalar),
-                                         precQuantity.scalar);
+      var precRoundedResult = mulSafe(
+        Math.round(this.scalar / precQuantity.scalar),
+        precQuantity.scalar
+      );
 
       return Qty(precRoundedResult + this.units());
     }
@@ -1335,9 +1347,7 @@ SOFTWARE.
     }
 
     return function converter(value) {
-      var i,
-          length,
-          result;
+      var i, length, result;
       if (!Array.isArray(value)) {
         return convert(value);
       }
@@ -1354,7 +1364,7 @@ SOFTWARE.
 
   var baseUnitCache = {};
 
-  function toBaseUnits (numerator,denominator) {
+  function toBaseUnits(numerator,denominator) {
     var num = [];
     var den = [];
     var q = 1;
@@ -1477,7 +1487,7 @@ SOFTWARE.
         other = Qty(other);
       }
 
-      if ((this.isTemperature()||other.isTemperature()) && !(this.isUnitless()||other.isUnitless())) {
+      if ((this.isTemperature() || other.isTemperature()) && !(this.isUnitless() || other.isUnitless())) {
         throw new QtyError("Cannot multiply by temperatures");
       }
 
@@ -1490,9 +1500,9 @@ SOFTWARE.
       if (op1.isCompatible(op2) && op1.signature !== 400) {
         op2 = op2.to(op1);
       }
-      var numden = cleanTerms(op1.numerator.concat(op2.numerator), op1.denominator.concat(op2.denominator));
+      var numdenscale = cleanTerms(op1.numerator, op1.denominator, op2.numerator, op2.denominator);
 
-      return Qty({"scalar": mulSafe(op1.scalar, op2.scalar), "numerator": numden[0], "denominator": numden[1]});
+      return Qty({"scalar": mulSafe(op1.scalar, op2.scalar, numdenscale[2]), "numerator": numdenscale[0], "denominator": numdenscale[1]});
     },
 
     div: function(other) {
@@ -1526,9 +1536,9 @@ SOFTWARE.
       if (op1.isCompatible(op2) && op1.signature !== 400) {
         op2 = op2.to(op1);
       }
-      var numden = cleanTerms(op1.numerator.concat(op2.denominator), op1.denominator.concat(op2.numerator));
+      var numdenscale = cleanTerms(op1.numerator, op1.denominator, op2.denominator, op2.numerator);
 
-      return Qty({"scalar": op1.scalar / op2.scalar, "numerator": numden[0], "denominator": numden[1]});
+      return Qty({"scalar": mulSafe(op1.scalar, numdenscale[2]) / op2.scalar, "numerator": numdenscale[0], "denominator": numdenscale[1]});
     },
 
     // Returns a Qty that is the inverse of this Qty,
@@ -1543,55 +1553,55 @@ SOFTWARE.
     }
   });
 
-  function cleanTerms(num, den) {
-    num = num.filter(function(val) {
+  function cleanTerms(num1, den1, num2, den2) {
+    function notUnity(val) {
       return val !== UNITY;
-    });
-    den = den.filter(function(val) {
-      return val !== UNITY;
-    });
+    }
+
+    num1 = num1.filter(notUnity);
+    num2 = num2.filter(notUnity);
+    den1 = den1.filter(notUnity);
+    den2 = den2.filter(notUnity);
 
     var combined = {};
 
-    var k;
-    for (var i = 0; i < num.length; i++) {
-      if (PREFIX_VALUES[num[i]]) {
-        k = [num[i], num[i + 1]];
-        i++;
-      }
-      else {
-        k = num[i];
-      }
-      if (k && k !== UNITY) {
-        if (combined[k]) {
-          combined[k][0]++;
+    function combineTerms(terms, direction) {
+      var k;
+      var prefix;
+      var prefixValue;
+      for (var i = 0; i < terms.length; i++) {
+        if (PREFIX_VALUES[terms[i]]) {
+          k = terms[i + 1];
+          prefix = terms[i];
+          prefixValue = PREFIX_VALUES[prefix];
+          i++;
         }
         else {
-          combined[k] = [1, k];
+          k = terms[i];
+          prefix = null;
+          prefixValue = 1;
+        }
+        if (k && k !== UNITY) {
+          if (combined[k]) {
+            combined[k][0] += direction;
+            var combinedPrefixValue = combined[k][2] ? PREFIX_VALUES[combined[k][2]] : 1;
+            combined[k][direction === 1 ? 3 : 4] *= divSafe(prefixValue, combinedPrefixValue);
+          }
+          else {
+            combined[k] = [direction, k, prefix, 1, 1];
+          }
         }
       }
     }
 
-    for (var j = 0; j < den.length; j++) {
-      if (PREFIX_VALUES[den[j]]) {
-        k = [den[j], den[j + 1]];
-        j++;
-      }
-      else {
-        k = den[j];
-      }
-      if (k && k !== UNITY) {
-        if (combined[k]) {
-          combined[k][0]--;
-        }
-        else {
-          combined[k] = [-1, k];
-        }
-      }
-    }
+    combineTerms(num1, 1);
+    combineTerms(den1, -1);
+    combineTerms(num2, 1);
+    combineTerms(den2, -1);
 
-    num = [];
-    den = [];
+    var num = [];
+    var den = [];
+    var scale = 1;
 
     for (var prop in combined) {
       if (combined.hasOwnProperty(prop)) {
@@ -1599,14 +1609,15 @@ SOFTWARE.
         var n;
         if (item[0] > 0) {
           for (n = 0; n < item[0]; n++) {
-            num.push(item[1]);
+            num.push(item[2] === null ? item[1] : [item[2], item[1]]);
           }
         }
         else if (item[0] < 0) {
           for (n = 0; n < -item[0]; n++) {
-            den.push(item[1]);
+            den.push(item[2] === null ? item[1] : [item[2], item[1]]);
           }
         }
+        scale *= divSafe(item[3], item[4]);
       }
     }
 
@@ -1625,7 +1636,7 @@ SOFTWARE.
       return a.concat(b);
     }, []);
 
-    return [num, den];
+    return [num, den, scale];
   }
 
   assign(Qty.prototype, {
@@ -1813,8 +1824,8 @@ SOFTWARE.
   /**
    * Default formatter
    *
-   * @param {number} scalar
-   * @param {string} units
+   * @param {number} scalar - scalar value
+   * @param {string} units - units as string
    *
    * @returns {string} formatted result
    */
@@ -1843,15 +1854,15 @@ SOFTWARE.
         return this._units;
       }
 
-      var numIsUnity = compareArray(this.numerator, UNITY_ARRAY),
-          denIsUnity = compareArray(this.denominator, UNITY_ARRAY);
+      var numIsUnity = compareArray(this.numerator, UNITY_ARRAY);
+      var denIsUnity = compareArray(this.denominator, UNITY_ARRAY);
       if (numIsUnity && denIsUnity) {
         this._units = "";
         return this._units;
       }
 
-      var numUnits = stringifyUnits(this.numerator),
-          denUnits = stringifyUnits(this.denominator);
+      var numUnits = stringifyUnits(this.numerator);
+      var denUnits = stringifyUnits(this.denominator);
       this._units = numUnits + (denIsUnity ? "" : ("/" + denUnits));
       return this._units;
     },
@@ -1977,7 +1988,7 @@ SOFTWARE.
     return unitNames;
   }
 
-  function simplify (units) {
+  function simplify(units) {
     // this turns ['s','m','s'] into ['s2','m']
 
     var unitCounts = units.reduce(function(acc, unit) {
@@ -1996,7 +2007,7 @@ SOFTWARE.
     });
   }
 
-  Qty.version = "1.7.2";
+  Qty.version = "1.7.6";
 
   return Qty;
 
